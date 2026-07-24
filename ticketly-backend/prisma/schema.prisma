@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuthProvider {
+  GOOGLE
+  FACEBOOK
+}
+
+enum TicketStatus {
+  BOOKED
+  CANCELLED
+}
+
+model User {
+  id         Int          @id @default(autoincrement())
+  name       String
+  email      String       @unique
+  provider   AuthProvider
+  providerId String
+  avatarUrl  String?
+  createdAt  DateTime     @default(now())
+  shows      Show[]
+  tickets    Ticket[]
+
+  @@unique([provider, providerId])
+  @@map("users")
+}
+
+model Show {
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String?  @db.Text
+  showDateTime   DateTime
+  venue          String
+  totalSeats     Int
+  availableSeats Int
+  price          Decimal  @db.Decimal(10, 2)
+  createdById    Int
+  createdBy      User     @relation(fields: [createdById], references: [id])
+  createdAt      DateTime @default(now())
+  tickets        Ticket[]
+
+  @@map("shows")
+}
+
+model Ticket {
+  id              Int          @id @default(autoincrement())
+  showId          Int
+  show            Show         @relation(fields: [showId], references: [id])
+  userId          Int
+  user            User         @relation(fields: [userId], references: [id])
+  seatNumber      Int
+  status          TicketStatus @default(BOOKED)
+  paymentIntentId String?      @unique
+  ticketPdfUrl    String?
+  bookedAt        DateTime     @default(now())
+
+  @@map("tickets")
+}
